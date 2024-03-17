@@ -1,6 +1,6 @@
 const router = require('express').Router();
-const messageController=require('../controller/message');
-const isAuth = require('../middleware/isAuth');
+const messageController=require('../controllers/message');
+const isAuth = require('../middlewares/isAuth');
 router.use(isAuth)
 router.route('/').post(messageController.sendMessage);
 router.route('/:chatId').get(messageController.getMessages);

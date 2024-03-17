@@ -5,7 +5,7 @@ const userRoute = require('./routes/user');
 const chatRoute = require('./routes/chat');
 const authRoute = require('./routes/auth');
 const messageRoute = require('./routes/message');
-const ErrorHandler = require('./middleware/ErrorHandler');
+const ErrorHandler = require('./middlewares/ErrorHandler');
 const cookieParser = require('cookie-parser')
 require('dotenv').config();
 const cors = require('cors');

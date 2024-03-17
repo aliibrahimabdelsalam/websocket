@@ -1,4 +1,4 @@
-# Ignore node_modules directory
+.DS_Store
 node_modules/
 .env
 **/dist/

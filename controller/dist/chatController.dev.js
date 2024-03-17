@@ -14,8 +14,9 @@ exports.accessChat = asyncHandler(function _callee(req, res, next) {
     while (1) {
       switch (_context.prev = _context.next) {
         case 0:
+          console.log("in chat");
           userId = req.body.userId;
-          _context.next = 3;
+          _context.next = 4;
           return regeneratorRuntime.awrap(Chat.find({
             $and: [{
               users: {
@@ -32,19 +33,19 @@ exports.accessChat = asyncHandler(function _callee(req, res, next) {
             }]
           }).populate("users", "-password").populate('message'));
 
-        case 3:
+        case 4:
           chatData = _context.sent;
-          _context.next = 6;
+          _context.next = 7;
           return regeneratorRuntime.awrap(User.populate(chatData, {
             path: 'message.sender',
             select: 'name image email'
           }));
 
-        case 6:
+        case 7:
           chatData = _context.sent;
 
           if (!(chatData.length > 0)) {
-            _context.next = 11;
+            _context.next = 12;
             break;
           }
 
@@ -52,42 +53,42 @@ exports.accessChat = asyncHandler(function _callee(req, res, next) {
             status: "success",
             data: chatData[0]
           });
-          _context.next = 21;
+          _context.next = 22;
           break;
 
-        case 11:
+        case 12:
           newChat = {
             users: [req.user._id, userId],
             chatName: "sender",
             isGroupChat: false
           };
-          _context.next = 14;
+          _context.next = 15;
           return regeneratorRuntime.awrap(Chat.create(newChat));
 
-        case 14:
+        case 15:
           createChat = _context.sent;
-          _context.next = 17;
+          _context.next = 18;
           return regeneratorRuntime.awrap(Chat.findOne({
             _id: createChat._id
           }).populate("users", "-password"));
 
-        case 17:
+        case 18:
           fullChat = _context.sent;
 
           if (fullChat) {
-            _context.next = 20;
+            _context.next = 21;
             break;
           }
 
           throw new AppError("the chat not exist", 400);
 
-        case 20:
+        case 21:
           res.status(201).json({
             status: "success",
             data: fullChat
           });
 
-        case 21:
+        case 22:
         case "end":
           return _context.stop();
       }
@@ -136,8 +137,9 @@ exports.fetchChats = asyncHandler(function _callee3(req, res, next) {
 
         case 2:
           next(new AppError('not found any chats for that user', 400));
+          console.log(chats);
 
-        case 3:
+        case 4:
         case "end":
           return _context3.stop();
       }

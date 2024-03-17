@@ -1,9 +1,9 @@
 const asyncHandler = require('express-async-handler');
-const AppError = require('../utils/AppError');
+const AppError = require('../errors/AppError');
 const jwt=require('jsonwebtoken')
 const {promisify}=require('util');
 const User = require('../models/user');
-const { getUsers } = require('../controller/userController');
+const UnauthorizedError = require('../errors/unAuthorized');
 const isAuth = asyncHandler(async (req, res, next) => {
     
     let token 
@@ -15,23 +15,21 @@ const isAuth = asyncHandler(async (req, res, next) => {
     }
     
     if (!token) {
-        next(new AppError(" you are not logged in :please login",401))
+        next(new UnauthorizedError(" not found token",401))
     }
     const decoded = await promisify(jwt.verify)(token, process.env.SECRET_KEY)
     const user = await User.findById(decoded.userId);
     if (!user) {
-        next(new AppError(" the user is not exist",401))
+        next(new UnauthorizedError(" the user is not exist",401))
     }
     if (user.changedPasswordAfter(decoded.iat)) {
         return next(
-            new AppError(
+            new UnauthorizedError(
                 'User Belong To This Token Recently Changed Password! Please Log In Again',
                 401
             )
         );
     }
-    console.log("ekdhsdj")
-    console.log(user)
         req.user = user;
     next()
 })

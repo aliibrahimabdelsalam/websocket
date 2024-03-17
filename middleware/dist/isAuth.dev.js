@@ -2,7 +2,7 @@
 
 var asyncHandler = require('express-async-handler');
 
-var AppError = require('../utils/AppError');
+var AppError = require('../errors/AppError');
 
 var jwt = require('jsonwebtoken');
 
@@ -11,8 +11,7 @@ var _require = require('util'),
 
 var User = require('../models/user');
 
-var _require2 = require('../controller/userController'),
-    getUsers = _require2.getUsers;
+var UnauthorizedError = require('../errors/unAuthorized');
 
 var isAuth = asyncHandler(function _callee(req, res, next) {
   var token, decoded, user;
@@ -27,7 +26,7 @@ var isAuth = asyncHandler(function _callee(req, res, next) {
           }
 
           if (!token) {
-            next(new AppError(" you are not logged in :please login", 401));
+            next(new UnauthorizedError(" not found token", 401));
           }
 
           _context.next = 4;
@@ -42,7 +41,7 @@ var isAuth = asyncHandler(function _callee(req, res, next) {
           user = _context.sent;
 
           if (!user) {
-            next(new AppError(" the user is not exist", 401));
+            next(new UnauthorizedError(" the user is not exist", 401));
           }
 
           if (!user.changedPasswordAfter(decoded.iat)) {
@@ -50,15 +49,13 @@ var isAuth = asyncHandler(function _callee(req, res, next) {
             break;
           }
 
-          return _context.abrupt("return", next(new AppError('User Belong To This Token Recently Changed Password! Please Log In Again', 401)));
+          return _context.abrupt("return", next(new UnauthorizedError('User Belong To This Token Recently Changed Password! Please Log In Again', 401)));
 
         case 11:
-          console.log("ekdhsdj");
-          console.log(user);
           req.user = user;
           next();
 
-        case 15:
+        case 13:
         case "end":
           return _context.stop();
       }

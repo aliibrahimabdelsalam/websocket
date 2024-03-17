@@ -6,13 +6,13 @@ var app = express();
 
 var connectToDatabase = require('./config/Database');
 
-var AppError = require('./utils/AppError');
+var userRoute = require('./routes/user');
 
-var userRoute = require('./routes/userRoute');
+var chatRoute = require('./routes/chat');
 
-var chatRoute = require('./routes/chatRoute');
+var authRoute = require('./routes/auth');
 
-var messageRoute = require('./routes/messageRoute');
+var messageRoute = require('./routes/message');
 
 var ErrorHandler = require('./middleware/ErrorHandler');
 
@@ -22,6 +22,9 @@ require('dotenv').config();
 
 var cors = require('cors');
 
+var NotFound = require('./errors/NotFound');
+
+var endPointStartWith = '/api/v1';
 app.use(express.json());
 app.use(cors({
   credentials: true,
@@ -33,11 +36,12 @@ app.use(express.json({
   limit: '10kb'
 }));
 app.use(cookieParser());
-app.use("/api/v1/user", userRoute);
-app.use("/api/v1/chat", chatRoute);
-app.use("/api/v1/message", messageRoute);
+app.use("".concat(endPointStartWith, "/auth"), authRoute);
+app.use("".concat(endPointStartWith, "/user"), userRoute);
+app.use("".concat(endPointStartWith, "/chat"), chatRoute);
+app.use("".concat(endPointStartWith, "/message"), messageRoute);
 app.all('*', function (req, res, next) {
-  next(new AppError("Cant find ".concat(req.originalUrl, " on this server"), 404));
+  next(new NotFound("Cant find ".concat(req.originalUrl, " on this server"), 404));
 });
 app.use(ErrorHandler);
 connectToDatabase(urlDataBase);

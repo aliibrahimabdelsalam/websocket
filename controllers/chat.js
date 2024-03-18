@@ -20,13 +20,14 @@ exports.accessChatByChatId = asyncHandler(async (req, res, next) => {
 
 exports.accessChat = asyncHandler(async (req, res, next) => {
     const { userId } = req.body;
+    const isGroup = req.query.isGroup;
+    console.log(isGroup);
     let chatData = await Chat.find({
         $and: [
             { users: { $elemMatch: { $eq: req.user._id } } },
             { users: { $elemMatch: { $eq: userId } } },
         ]
     })
-    console.log(chatData.length)
     if (chatData.length > 0) {   
         res.status(200).json({
             status: "success",
@@ -51,11 +52,13 @@ exports.accessChat = asyncHandler(async (req, res, next) => {
     }
 })
 exports.fetchChats = asyncHandler(async (req, res, next) => {
-         const chats = await Chat.aggregate([
+    let isGroupChat = req.query.isGroup;
+    console.log("dsjhd ",typeof isGroupChat )
+        let chats = await Chat.aggregate([
          {
         $match: { users: { $elemMatch: { $eq: req.user._id } } }
-    },
-    {
+        },
+        {
         $lookup: {
             from: 'messages',
             let: { chatId: '$_id' },
@@ -66,17 +69,23 @@ exports.fetchChats = asyncHandler(async (req, res, next) => {
             ],
             as: 'lastMessage'
         }
-    },
-    {
+        },
+        {
         $set: {
             lastMessage: { $arrayElemAt: ['$lastMessage', 0] }
+            }
         }
-    }
          ]);
+    chats = chats.filter(chat => {
+        return chat.users.length > 2 == (isGroupChat === 'true');
+    });
+    
+        console.log("sssss")
+
      for (const chat of chats) {
         await Message.populate(chat.lastMessage, { path: 'sender', select: 'name image' });
     }
-
+    console.log()
             res.status(200).json({
                 status: "success",
                 data:chats

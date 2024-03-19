@@ -6,15 +6,23 @@ const BadRequest = require('../errors/BadRequest');
 const Message = require('../models/message');
 exports.accessChatByChatId = asyncHandler(async (req, res, next) => {
     const { chatId } = req.body;
-    let seen = false;
-    let message = await Message.findOne({chat: chatId }).sort({ createdAt: -1 });
-    if (message && (message.sender.toString()!==req.user._id.toString())) {
-        message = await Message.updateOne({ _id: message._id }, { seen: true });
-        seen=true
+    let messages = await Message.find({ chat: chatId });
+       await Promise.all(messages.map(async (message)=> {
+        if (message.sender.toString() !== req.user._id.toString()) {
+            return await Message.findByIdAndUpdate(message._id, {
+                $addToSet: { seen:{ users: req.user._id } }
+            }, {
+                new: true,
+                runValidators:true
+           });
         }
+        return message   
+    }))
+        const newMessages = await Message.find({ chat: chatId }).populate('seen.users','-password');
+
         res.status(200).json({
             status: "success",
-            data:seen 
+            data:newMessages 
         })
     })
 
@@ -23,10 +31,10 @@ exports.accessChat = asyncHandler(async (req, res, next) => {
     const isGroup = req.query.isGroup;
     console.log(isGroup);
     let chatData = await Chat.find({
-        $and: [
-            { users: { $elemMatch: { $eq: req.user._id } } },
-            { users: { $elemMatch: { $eq: userId } } },
-        ]
+        users: {
+            $size: 2, 
+            $all: [req.user._id, userId]
+        }
     })
     if (chatData.length > 0) {   
         res.status(200).json({
@@ -53,7 +61,6 @@ exports.accessChat = asyncHandler(async (req, res, next) => {
 })
 exports.fetchChats = asyncHandler(async (req, res, next) => {
     let isGroupChat = req.query.isGroup;
-    console.log("dsjhd ",typeof isGroupChat )
         let chats = await Chat.aggregate([
          {
         $match: { users: { $elemMatch: { $eq: req.user._id } } }
@@ -79,13 +86,15 @@ exports.fetchChats = asyncHandler(async (req, res, next) => {
     chats = chats.filter(chat => {
         return chat.users.length > 2 == (isGroupChat === 'true');
     });
-    
-        console.log("sssss")
-
      for (const chat of chats) {
-        await Message.populate(chat.lastMessage, { path: 'sender', select: 'name image' });
+         await Message.populate(chat.lastMessage, { path: 'sender', select: 'name image' });
+         const unseenCount = await Message.countDocuments({
+            chat: chat._id,
+            seen: { $ne: req.user._id }
+        });
+
+        chat.unseenMessagesCount = unseenCount;
     }
-    console.log()
             res.status(200).json({
                 status: "success",
                 data:chats
@@ -142,7 +151,7 @@ exports.addUserToGroup = asyncHandler(async (req, res, next) => {
         next(new BadRequest('you not admin to add user to group',400))
     }
     const newChat = await Chat.findByIdAndUpdate(chatId, {
-        $push: { users: userId }
+        $addToSet: { users: userId }
     }, {
         runValidators: true,
         new: true

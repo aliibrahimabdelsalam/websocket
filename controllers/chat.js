@@ -28,8 +28,6 @@ exports.accessChatByChatId = asyncHandler(async (req, res, next) => {
 
 exports.accessChat = asyncHandler(async (req, res, next) => {
     const { userId } = req.body;
-    const isGroup = req.query.isGroup;
-    console.log(isGroup);
     let chatData = await Chat.find({
         users: {
             $size: 2, 
@@ -60,7 +58,7 @@ exports.accessChat = asyncHandler(async (req, res, next) => {
     }
 })
 exports.fetchChats = asyncHandler(async (req, res, next) => {
-    let isGroupChat = req.query.isGroup;
+        let isGroupChat = req.query.isGroup;
         let chats = await Chat.aggregate([
          {
         $match: { users: { $elemMatch: { $eq: req.user._id } } }
@@ -88,6 +86,7 @@ exports.fetchChats = asyncHandler(async (req, res, next) => {
     });
      for (const chat of chats) {
          await Message.populate(chat.lastMessage, { path: 'sender', select: 'name image' });
+         await User.populate(chat, { path: "users", select: "name" });
          const unseenCount = await Message.countDocuments({
             chat: chat._id,
             seen: { $ne: req.user._id }
@@ -95,11 +94,17 @@ exports.fetchChats = asyncHandler(async (req, res, next) => {
 
         chat.unseenMessagesCount = unseenCount;
     }
+    for (const chat of chats) {
+        for (const user of chat.users) {   
+            if ((user._id.toString() !== req.user._id.toString())&&chat.users.length===2) {
+                chat.chatName = user.name;
+            }
+        }
+    }
             res.status(200).json({
                 status: "success",
                 data:chats
             })
-        
 })
 exports.createGroup = asyncHandler(async (req, res, next) => {
     const users = JSON.parse(req.body.users);
